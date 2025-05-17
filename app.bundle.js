@@ -1,5 +1,77 @@
 // --- Constantes SBP 2021 ---
-const LEITES = [
+const SHOW_ALERTS = false; // Flag para controlar exibição dos alertas SBP
+
+// Funções para gerenciar cookies
+function setCookie(name, value, days) {
+  try {
+    let expires = "";
+    if (days) {
+      const date = new Date();
+      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+      expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + JSON.stringify(value) + expires + "; path=/";
+    return true;
+  } catch (error) {
+    console.error("Erro ao salvar cookie:", error);
+    return false;
+  }
+}
+
+function getCookie(name) {
+  try {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for(let i = 0; i < ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+      if (c.indexOf(nameEQ) === 0) {
+        const value = c.substring(nameEQ.length, c.length);
+        return JSON.parse(value);
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Erro ao ler cookie:", error);
+    return null;
+  }
+}
+
+// Função para salvar fórmula personalizada
+function saveCustomFormula(label, kcal, prot) {
+  try {
+    const savedFormulas = getCookie('savedFormulas') || [];
+    const newFormula = {
+      label: label,
+      value: `custom_${Date.now()}`,
+      kcal: Number(kcal),
+      prot: Number(prot),
+      tooltip: `Fórmula personalizada: ${kcal} kcal/mL, ${prot} g/mL proteína.`,
+      isCustom: true
+    };
+    
+    // Verifica se já existe uma fórmula com o mesmo nome
+    const existingIndex = savedFormulas.findIndex(f => f.label === label);
+    if (existingIndex !== -1) {
+      savedFormulas[existingIndex] = newFormula;
+    } else {
+      savedFormulas.push(newFormula);
+    }
+    
+    if (!setCookie('savedFormulas', savedFormulas, 365)) {
+      throw new Error("Falha ao salvar cookie");
+    }
+    
+    return newFormula;
+  } catch (error) {
+    console.error("Erro ao salvar fórmula:", error);
+    alert("Erro ao salvar fórmula. Por favor, tente novamente.");
+    return null;
+  }
+}
+
+// Fórmulas padrão
+const DEFAULT_LEITES = [
   {
     label: "Leite materno puro",
     value: "materno",
@@ -33,6 +105,14 @@ const LEITES = [
     ref: "https://spdf.com.br/wp-content/uploads/2021/10/23148c-GPrat_Aliment_Cr_0-5_anos_SITE__002_.pdf#page=45"
   },
   {
+    label: "**PERSONALIZADO**",
+    value: "personalizado",
+    kcal: 0.7,
+    prot: 0.01,
+    tooltip: "Informe o valor calórico (kcal/mL) e proteico (g/mL) do leite.",
+    ref: ""
+  },
+  {
     label: "Fórmula de transição",
     value: "transicao",
     kcal: 0.73,
@@ -41,11 +121,67 @@ const LEITES = [
     ref: "https://www.sbp.com.br/fileadmin/user_upload/Manual_de_atualidades_em_Nutrologia_2021_-_SBP_SITE.pdf#page=234"
   },
   {
-    label: "Personalizado",
-    value: "personalizado",
-    kcal: 0.7,
-    prot: 0.01,
-    tooltip: "Informe o valor calórico (kcal/mL) e proteico (g/mL) do leite.",
+    label: "Nestlé NAN Soy",
+    value: "nan_soy",
+    kcal: 0.67,
+    prot: 0.018,
+    tooltip: "Nestlé NAN Soy (soja sem lactose): 0,67 kcal/mL, 1,8 g/100mL proteína.",
+    ref: ""
+  },
+  {
+    label: "NAN SUPREMEPRO",
+    value: "nan_supreme",
+    kcal: 0.67,
+    prot: 0.015,
+    tooltip: "NAN SUPREMEPRO (6–12 meses): 0,67 kcal/mL, 1,5 g/100mL proteína.",
+    ref: ""
+  },
+  {
+    label: "SIMILACSoy ISOMIL",
+    value: "isomil",
+    kcal: 0.67,
+    prot: 0.0165,
+    tooltip: "SIMILACSoy ISOMIL: 0,67 kcal/mL, 1,65 g/100mL proteína.",
+    ref: ""
+  },
+  {
+    label: "Alfaré",
+    value: "alfare",
+    kcal: 0.68,
+    prot: 0.02,
+    tooltip: "Alfaré® (Nestlé Health Science): 0,68 kcal/mL, 2,0 g/100mL proteína.",
+    ref: ""
+  },
+  {
+    label: "Pregomin Pepti",
+    value: "pregomin",
+    kcal: 0.66,
+    prot: 0.018,
+    tooltip: "Pregomin Pepti: 0,66 kcal/mL, 1,8 g/100mL proteína.",
+    ref: ""
+  },
+  {
+    label: "Neocate LCP",
+    value: "neocate",
+    kcal: 0.68,
+    prot: 0.019,
+    tooltip: "Neocate LCP: 0,68 kcal/mL, 1,9 g/100mL proteína.",
+    ref: ""
+  },
+  {
+    label: "Alfamino",
+    value: "alfamino",
+    kcal: 0.66,
+    prot: 0.018,
+    tooltip: "Alfamino®: 0,66 kcal/mL, 1,8 g/100mL proteína.",
+    ref: ""
+  },
+  {
+    label: "Infatrini Powder",
+    value: "infatrini",
+    kcal: 1.00,
+    prot: 0.026,
+    tooltip: "Infatrini Powder (Nutricia): 1,00 kcal/mL, 2,6 g/100mL proteína.",
     ref: ""
   }
 ];
@@ -208,6 +344,140 @@ function IdadeAtualField({ anos, meses, dias, setAnos, setMeses, setDias }) {
 
 // LeiteDropdown
 function LeiteDropdown({ value, onChange, kcal, prot, onKcalChange, onProtChange }) {
+  const [showSaveDialog, setShowSaveDialog] = React.useState(false);
+  const [formulaName, setFormulaName] = React.useState("");
+  const [leites, setLeites] = React.useState(() => {
+    try {
+      const savedFormulas = getCookie('savedFormulas') || [];
+      console.log("Fórmulas carregadas:", savedFormulas);
+      
+      // Separa as fórmulas padrão em dois grupos
+      const defaultLeitesBeforePersonalizado = DEFAULT_LEITES.filter(l => 
+        l.value !== "personalizado" && 
+        DEFAULT_LEITES.indexOf(l) < DEFAULT_LEITES.findIndex(l => l.value === "personalizado")
+      );
+      
+      const defaultLeitesAfterPersonalizado = DEFAULT_LEITES.filter(l => 
+        l.value !== "personalizado" && 
+        DEFAULT_LEITES.indexOf(l) > DEFAULT_LEITES.findIndex(l => l.value === "personalizado")
+      );
+      
+      // Monta a lista final com a ordem correta
+      return [
+        ...defaultLeitesBeforePersonalizado,
+        ...savedFormulas,
+        DEFAULT_LEITES.find(l => l.value === "personalizado"),
+        ...defaultLeitesAfterPersonalizado
+      ];
+    } catch (error) {
+      console.error("Erro ao carregar fórmulas:", error);
+      return DEFAULT_LEITES;
+    }
+  });
+
+  // Efeito para atualizar os valores quando uma fórmula personalizada é selecionada
+  React.useEffect(() => {
+    if (value.startsWith('custom_')) {
+      const selectedFormula = leites.find(l => l.value === value);
+      if (selectedFormula) {
+        console.log("Fórmula personalizada selecionada:", selectedFormula);
+        onKcalChange(selectedFormula.kcal);
+        onProtChange(selectedFormula.prot);
+      }
+    } else if (value === "personalizado") {
+      // Não força mais valores padrão aqui
+      if (kcal === "") onKcalChange("");
+      if (prot === "") onProtChange("");
+    } else {
+      const leite = DEFAULT_LEITES.find(l => l.value === value) || DEFAULT_LEITES[0];
+      onKcalChange(leite.kcal);
+      onProtChange(leite.prot);
+    }
+  }, [value, leites, onKcalChange, onProtChange]);
+
+  function handleSaveFormula() {
+    if (!formulaName.trim()) {
+      alert("Por favor, dê um nome para a fórmula.");
+      return;
+    }
+    
+    try {
+      // Validação dos valores
+      const kcalValue = Number(kcal);
+      const protValue = Number(prot);
+      
+      if (isNaN(kcalValue) || isNaN(protValue)) {
+        throw new Error("Valores inválidos para kcal ou proteína");
+      }
+      
+      if (kcalValue <= 0 || protValue <= 0) {
+        throw new Error("Valores de kcal e proteína devem ser maiores que zero");
+      }
+      
+      // Salva a nova fórmula
+      const newFormula = {
+        label: formulaName,
+        value: `custom_${Date.now()}`,
+        kcal: kcalValue,
+        prot: protValue,
+        tooltip: `Fórmula personalizada: ${kcalValue} kcal/mL, ${protValue} g/mL proteína.`,
+        isCustom: true
+      };
+
+      console.log("Salvando nova fórmula:", newFormula);
+
+      // Atualiza o cookie com a nova fórmula
+      const savedFormulas = getCookie('savedFormulas') || [];
+      const existingIndex = savedFormulas.findIndex(f => f.label === formulaName);
+      
+      if (existingIndex !== -1) {
+        savedFormulas[existingIndex] = newFormula;
+      } else {
+        savedFormulas.push(newFormula);
+      }
+      
+      if (!setCookie('savedFormulas', savedFormulas, 365)) {
+        throw new Error("Falha ao salvar cookie");
+      }
+
+      // Atualiza a lista local de fórmulas mantendo a ordem correta
+      const defaultLeitesBeforePersonalizado = DEFAULT_LEITES.filter(l => 
+        l.value !== "personalizado" && 
+        DEFAULT_LEITES.indexOf(l) < DEFAULT_LEITES.findIndex(l => l.value === "personalizado")
+      );
+      
+      const defaultLeitesAfterPersonalizado = DEFAULT_LEITES.filter(l => 
+        l.value !== "personalizado" && 
+        DEFAULT_LEITES.indexOf(l) > DEFAULT_LEITES.findIndex(l => l.value === "personalizado")
+      );
+      
+      const updatedLeites = [
+        ...defaultLeitesBeforePersonalizado,
+        ...savedFormulas,
+        DEFAULT_LEITES.find(l => l.value === "personalizado"),
+        ...defaultLeitesAfterPersonalizado
+      ];
+      
+      setLeites(updatedLeites);
+      
+      // Seleciona a nova fórmula e atualiza os valores
+      onChange(newFormula.value);
+      onKcalChange(newFormula.kcal);
+      onProtChange(newFormula.prot);
+      
+      // Limpa o diálogo
+      setShowSaveDialog(false);
+      setFormulaName("");
+      
+      // Feedback visual
+      alert("Fórmula salva com sucesso!");
+      
+    } catch (error) {
+      console.error("Erro ao salvar fórmula:", error);
+      alert(error.message || "Erro ao salvar fórmula. Por favor, tente novamente.");
+    }
+  }
+
   return (
     React.createElement("div", { className: "mb-2" },
       React.createElement("label", { className: "font-medium flex items-center text-white" },
@@ -219,54 +489,73 @@ function LeiteDropdown({ value, onChange, kcal, prot, onKcalChange, onProtChange
         value: value,
         onChange: e => onChange(e.target.value)
       },
-        LEITES.map(l =>
-          React.createElement("option", { key: l.value, value: l.value }, l.value === "personalizado" ? l.label : `${l.label} (${l.kcal.toFixed(2)} kcal/mL)`)
+        leites.map(l =>
+          React.createElement("option", { key: l.value, value: l.value }, 
+            l.isCustom ? 
+              `${l.label} * (${l.kcal.toFixed(2)} kcal/mL)` : 
+              l.value === "personalizado" ? 
+                l.label : 
+                `${l.label} (${l.kcal.toFixed(2)} kcal/mL)`
+          )
         )
       ),
-      value === "personalizado" && React.createElement("div", { className: "flex gap-2 mt-2" },
-        React.createElement(InputField, {
-          label: "kcal/mL",
-          type: "number",
-          min: "0",
-          step: "0.01",
-          value: kcal,
-          onChange: e => onKcalChange(e.target.value)
-        }),
-        React.createElement(InputField, {
-          label: "g proteína/mL",
-          type: "number",
-          min: "0",
-          step: "0.001",
-          value: prot,
-          onChange: e => onProtChange(e.target.value)
-        })
-      )
-    )
-  );
-}
-
-// Comorbidades do RN responsivo
-function Comorbidades({ values, onChange }) {
-  return (
-    React.createElement("div", { className: "mb-2" },
-      React.createElement("span", { className: "font-medium text-white" }, "Comorbidades do RN"),
-      React.createElement("div", { className: "flex flex-wrap gap-2 mt-1 w-full" },
-        COMORBIDADES.map(c => (
-          React.createElement("label", {
-            key: c.value,
-            className: "flex items-center gap-1 min-w-[140px] p-1 bg-gray-600 rounded"
-          },
-            React.createElement("input", {
-              type: "checkbox",
-              checked: values.includes(c.value),
-              onChange: e => {
-                if (e.target.checked) onChange([...values, c.value]);
-                else onChange(values.filter(v => v !== c.value));
+      value === "personalizado" && React.createElement("div", { className: "flex flex-col gap-2 mt-2" },
+        React.createElement("div", { className: "flex gap-2" },
+          React.createElement(InputField, {
+            label: "kcal/mL",
+            type: "text",
+            value: kcal,
+            onChange: e => {
+              const value = e.target.value.replace(',', '.');
+              if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                onKcalChange(value);
               }
-            }),
-            c.label
+            }
+          }),
+          React.createElement(InputField, {
+            label: "g de proteína/mL",
+            type: "text",
+            value: prot,
+            onChange: e => {
+              const value = e.target.value.replace(',', '.');
+              if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                onProtChange(value);
+              }
+            }
+          })
+        ),
+        React.createElement("button", {
+          className: "bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700",
+          onClick: () => setShowSaveDialog(true)
+        }, "Salvar esta fórmula")
+      ),
+      showSaveDialog && React.createElement("div", { 
+        className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999]",
+        style: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }
+      },
+        React.createElement("div", { 
+          className: "bg-gray-700 p-4 rounded shadow-lg w-80 relative",
+          style: { zIndex: 100000 }
+        },
+          React.createElement("h3", { className: "text-lg font-bold mb-4 text-white" }, "Salvar Fórmula Personalizada"),
+          React.createElement(InputField, {
+            label: "Nome da fórmula",
+            type: "text",
+            value: formulaName,
+            onChange: e => setFormulaName(e.target.value),
+            placeholder: "Ex: Fórmula Hospital X"
+          }),
+          React.createElement("div", { className: "flex justify-end gap-2 mt-4" },
+            React.createElement("button", {
+              className: "bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600",
+              onClick: () => setShowSaveDialog(false)
+            }, "Cancelar"),
+            React.createElement("button", {
+              className: "bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700",
+              onClick: handleSaveFormula
+            }, "Salvar")
           )
-        ))
+        )
       )
     )
   );
@@ -306,37 +595,6 @@ function InputFieldWithDisable({ label, tooltip, refUrl, disabled, disabledMsg, 
       })
     )
   );
-}
-
-// AlertaComorbidades: mostra alertas de comorbidades apenas uma vez
-function AlertaComorbidades({ comorbidades }) {
-  const comorbCriticas = [
-    { value: "dbp", msg: "⚠️ DBP: Recomenda-se cota calórica de 140–150 kcal/kg/dia. Consulte manual.", severity: "warning", ref: "https://www.sbp.com.br/fileadmin/user_upload/Manual_de_atualidades_em_Nutrologia_2021_-_SBP_SITE.pdf#page=59" },
-    { value: "nec", msg: "⚠️ NEC: Protocolos de feeding mínimos e avanço gradual. Pode haver imprecisão, consulte manual.", severity: "error", ref: "https://www.sbp.com.br/fileadmin/user_upload/24651c-ManSeguimento_RN_AltoRisco_MIOLO.pdf#page=120" },
-    { value: "cardiopatia", msg: "⚠️ Cardiopatia: Restrição de volume e densidade energética alta. Pode haver imprecisão, consulte manual.", severity: "error", ref: "https://www.sbp.com.br/fileadmin/user_upload/24651c-ManSeguimento_RN_AltoRisco_MIOLO.pdf#page=110" },
-    { value: "renal", msg: "⚠️ IRA: Limite hídrico e aporte protéico/calórico aumentado. Pode haver imprecisão, consulte manual.", severity: "error", ref: "https://www.sbp.com.br/fileadmin/user_upload/24651c-ManSeguimento_RN_AltoRisco_MIOLO.pdf#page=140" },
-    { value: "sepse", msg: "⚠️ Sepse Grave: Calorias até 140 kcal/kg/dia e proteína 3,5–4 g/kg/dia. Pode haver imprecisão, consulte manual.", severity: "error", ref: "https://www.sbp.com.br/fileadmin/user_upload/24651c-ManSeguimento_RN_AltoRisco_MIOLO.pdf#page=150" },
-    { value: "bili", msg: "Hiperbilirrubinemia: Cuidados pós-fototerapia. Pode haver imprecisão, consulte manual.", severity: "error", ref: "https://www.sbp.com.br/fileadmin/user_upload/24651c-ManSeguimento_RN_AltoRisco_MIOLO.pdf#page=128" }
-  ];
-  const alerts = comorbCriticas.filter(c => comorbidades.includes(c.value)).map(c =>
-    React.createElement(
-      "div",
-      {
-        key: c.value,
-        className:
-          c.severity === "error"
-            ? "bg-red-200 border-l-4 border-red-700 text-red-900 p-2 my-2 text-sm rounded flex items-center"
-            : "bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 my-2 text-sm rounded flex items-center"
-      },
-      c.msg,
-      " — ",
-      React.createElement("a", { href: c.ref, target: "_blank", rel: "noopener noreferrer", className: "underline" }, "Ver manual")
-    )
-  );
-  if (alerts.length > 0) {
-    return React.createElement(React.Fragment, null, alerts);
-  }
-  return null;
 }
 
 // ErrorBoundary para capturar erros e evitar crash
@@ -382,6 +640,8 @@ class ErrorBoundary extends React.Component {
 
 // Validação defensiva em AlertaSBP
 function AlertaSBP({ tipo, valor, comorbidades }) {
+  if (!SHOW_ALERTS) return null;
+  
   let faixa, label;
   if (tipo === "hidrica") {
     faixa = FAIXAS.hidrica;
@@ -402,7 +662,7 @@ function AlertaSBP({ tipo, valor, comorbidades }) {
       faixa = FAIXAS.proteica_sepse;
       label = "ATENÇÃO: A SBP recomenda uma Cota proteica de 3,5–4,0 g/kg/dia para Sepse";
     } else {
-    faixa = FAIXAS.proteica;
+      faixa = FAIXAS.proteica;
       label = "ATENÇÃO: A SBP recomenda uma Cota proteica de 2,5–3,5 g/kg/dia";
     }
   }
@@ -462,113 +722,6 @@ function TooltipValor({ children, texto }) {
         style: { top: '100%' }
       },
       texto
-    )
-  );
-}
-
-// Corrigir GraficoComparativo para barra SBP começar em faixa.min e terminar em faixa.max
-function GraficoComparativo({ titulo, faixa, valor, unidade }) {
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    if (!ref.current) return;
-    if (ref.current.chart) {
-      ref.current.chart.destroy();
-      ref.current.chart = null;
-    }
-    // Barra SBP: invisível até min, depois cinza até max
-    // Barra Calculado: valor
-    const invisivel = faixa.min;
-    const sbpBar = faixa.max - faixa.min;
-    const calcBar = valor;
-    // Inverter tons de verde: verde escuro (#155C22) para excedente, verde normal (#22c55e) para dentro da faixa
-    const corCalc = (valor >= faixa.min && valor <= faixa.max) ? '#22c55e' : (valor > faixa.max ? '#155C22' : '#dc2626');
-    ref.current.chart = new window.Chart(ref.current.getContext("2d"), {
-      type: "bar",
-      data: {
-        labels: ["SBP", "Calculado"],
-        datasets: [
-          // SBP: invisível até min, depois cinza até max
-          {
-            label: 'Invisível',
-            data: [invisivel, 0],
-            backgroundColor: ['rgba(0,0,0,0)', 'rgba(0,0,0,0)'],
-            stack: 'sbp',
-            barThickness: 18,
-            categoryPercentage: 0.6,
-            barPercentage: 0.8
-          },
-          {
-            label: 'Faixa SBP',
-            data: [sbpBar, 0],
-            backgroundColor: ['#d1d5db', 'rgba(0,0,0,0)'],
-            stack: 'sbp',
-            barThickness: 18,
-            categoryPercentage: 0.6,
-            barPercentage: 0.8
-          },
-          // Calculado: só na linha "Calculado"
-          {
-            label: 'Calculado',
-            data: [0, calcBar],
-            backgroundColor: ['rgba(0,0,0,0)', corCalc],
-            stack: 'calc',
-            barThickness: 18,
-            categoryPercentage: 0.6,
-            barPercentage: 0.8
-          }
-        ]
-      },
-      options: {
-        indexAxis: "y",
-        plugins: {
-          legend: { display: false },
-          title: { display: false },
-          tooltip: {
-            enabled: true,
-            callbacks: {
-              label: function(context) {
-                if (context.dataIndex === 0 && context.dataset.label === 'Faixa SBP') {
-                  return `Faixa SBP: ${faixa.min}–${faixa.max} ${unidade}`;
-                } else if (context.dataIndex === 1 && context.dataset.label === 'Calculado') {
-                  return `Calculado: ${valor.toFixed(2)} ${unidade}`;
-                }
-                return '';
-              }
-            },
-            backgroundColor: '#222',
-            titleColor: '#fff',
-            bodyColor: '#fff',
-            borderColor: '#fff',
-            borderWidth: 1
-          }
-        },
-        scales: {
-          x: {
-            min: 0,
-            max: Math.max(faixa.max, valor) * 1.2,
-            stacked: true,
-            ticks: { color: '#fff' },
-            grid: { color: 'rgba(255,255,255,0.1)' }
-          },
-          y: {
-            stacked: true,
-            ticks: { color: '#fff', font: { size: 14 } },
-            grid: { color: 'rgba(255,255,255,0.1)' }
-          }
-        }
-      }
-    });
-  }, [faixa, valor, titulo, unidade]);
-  return (
-    React.createElement("div", { className: "mb-4" },
-      React.createElement("div", { className: "font-bold text-white text-base mb-1" }, titulo),
-      React.createElement("canvas", { ref: ref, height: 70 }),
-      React.createElement("div", { className: "text-xs text-blue-200 mt-1" },
-        `Faixa SBP: ${faixa.min}–${faixa.max} ${unidade}`
-      ),
-      React.createElement("div", { className: "text-xs text-white mt-1" },
-        `Valor calculado: ${valor.toFixed(2)} ${unidade}`
-      )
     )
   );
 }
@@ -785,23 +938,44 @@ function App() {
   const [pesoAtual, setPesoAtual] = React.useState("");
   const [comorbidades, setComorbidades] = React.useState([]);
   const [tipoLeite, setTipoLeite] = React.useState("materno");
-  const [kcalPersonalizado, setKcalPersonalizado] = React.useState(0.7);
-  const [protPersonalizado, setProtPersonalizado] = React.useState(0.01);
+  const [kcalPersonalizado, setKcalPersonalizado] = React.useState("");
+  const [protPersonalizado, setProtPersonalizado] = React.useState("");
   const [numMamadas, setNumMamadas] = React.useState(8);
   const [volumePorMamada, setVolumePorMamada] = React.useState("");
   const [cotaCaloricaDesejada, setCotaCaloricaDesejada] = React.useState("");
 
-  const leite = LEITES.find(l => l.value === tipoLeite) || LEITES[0];
-  const coefKcalPorMl = tipoLeite === "personalizado" ? Number(kcalPersonalizado) : leite.kcal;
-  const coefProtPorMl = tipoLeite === "personalizado" ? Number(protPersonalizado) : leite.prot;
+  const leite = DEFAULT_LEITES.find(l => l.value === tipoLeite) || DEFAULT_LEITES[0];
+  
+  // Função auxiliar para converter string para número
+  const parseValue = (value) => {
+    if (typeof value === 'number') return value;
+    if (!value) return 0;
+    return parseFloat(value.toString().replace(',', '.')) || 0;
+  };
+  
+  // Atualizar a lógica de cálculo dos coeficientes
+  const coefKcalPorMl = tipoLeite.startsWith('custom_') ? 
+    parseValue(kcalPersonalizado) : 
+    tipoLeite === "personalizado" ? 
+      parseValue(kcalPersonalizado) : 
+      leite.kcal;
+      
+  const coefProtPorMl = tipoLeite.startsWith('custom_') ? 
+    parseValue(protPersonalizado) : 
+    tipoLeite === "personalizado" ? 
+      parseValue(protPersonalizado) : 
+      leite.prot;
 
   // Lógica para idade em dias
   function idadeTotalDias() {
     return (Number(idadeAnos) * 365) + (Number(idadeMeses) * 30) + Number(idadeDias);
   }
   const idadeDiasTotal = idadeTotalDias();
-  // Peso de uso
-  const pesoUso = (idadeDiasTotal <= 7 ? Number(pesoNascimento) : Number(pesoAtual)) / 1000;
+  
+  // Peso de uso - agora usa peso atual por padrão
+  const pesoUso = (idadeDiasTotal > 0 && idadeDiasTotal < 8 && pesoNascimento) ? 
+    Number(pesoNascimento) / 1000 : 
+    Number(pesoAtual) / 1000;
 
   const volumeTotal = Number(volumePorMamada) && Number(numMamadas) ? Number(volumePorMamada) * Number(numMamadas) : 0; // mL/dia
   const cotaHidrica = pesoUso ? volumeTotal / pesoUso : 0; // mL/kg/dia
@@ -823,8 +997,8 @@ function App() {
     setIdadeDias("");
     setComorbidades([]);
     setTipoLeite("materno");
-    setKcalPersonalizado(0.7);
-    setProtPersonalizado(0.01);
+    setKcalPersonalizado("");
+    setProtPersonalizado("");
     setNumMamadas(8);
     setVolumePorMamada("");
     setCotaCaloricaDesejada("");
@@ -855,51 +1029,8 @@ function App() {
       React.createElement(AppBackground, null),
       React.createElement("div", { className: "max-w-3xl mx-auto p-4 bg-[#15202b] text-white min-h-screen w-full", style: { overflowX: 'hidden' } },
         React.createElement("h1", { className: "text-3xl font-bold mb-2 text-center", style: { color: '#22c55e', fontSize: 'clamp(1.5rem, 6vw, 2.25rem)' } }, "Calculadora Neonatal de Cota Hídrica, Calórica e Proteíca"),
-        React.createElement("div", { className: "mb-2" },
-          React.createElement("span", { className: "text-sm text-gray-200" },
-            "Baseada nas diretrizes da Sociedade Brasileira de Pediatria (SBP)",
-            React.createElement("br", null),
-            React.createElement("span", { className: "text-xs text-blue-200" },
-              React.createElement("a", {
-                href: "https://www.sbp.com.br/fileadmin/user_upload/Manual_de_atualidades_em_Nutrologia_2021_-_SBP_SITE.pdf",
-                target: "_blank",
-                rel: "noopener noreferrer",
-                className: "underline text-blue-200"
-              }, "Manual SBP 2021", React.createElement(ExternalLinkIcon, null))
-            ),
-            React.createElement("br", null),
-            React.createElement("span", { className: "text-xs text-blue-200" },
-              React.createElement("a", {
-                href: "https://www.sbp.com.br/fileadmin/user_upload/24651c-ManSeguimento_RN_AltoRisco_MIOLO.pdf",
-                target: "_blank",
-                rel: "noopener noreferrer",
-                className: "underline text-blue-200"
-              }, "Manual de Seguimento do RN de Alto Risco - SBP 2024", React.createElement(ExternalLinkIcon, null))
-            ),
-            React.createElement("br", null),
-            React.createElement("span", { className: "text-xs text-blue-200" },
-              React.createElement("a", {
-                href: "https://www.sbp.com.br/fileadmin/user_upload/24504e-Man_AspecNutric_em_Sit_Especiais_Inf_e_adl.pdf",
-                target: "_blank",
-                rel: "noopener noreferrer",
-                className: "underline text-blue-200"
-              }, "Manual de Aspectos Nutricionais em Sit. Especiais na Inf. e Adolesc. - SBP 2024", React.createElement(ExternalLinkIcon, null))
-            ),
-            React.createElement("br", null),
-            React.createElement("span", { className: "text-xs text-blue-200" },
-              React.createElement("a", {
-                href: "https://www.sbp.com.br/fileadmin/user_upload/23148cf-GPrat_Aliment_Crc_0-5_anos_SITE.pdf",
-                target: "_blank",
-                rel: "noopener noreferrer",
-                className: "underline text-blue-200"
-              }, "Guia Prático de Alimentação 0-5 anos - SBP 2021", React.createElement(ExternalLinkIcon, null))
-            )
-          )
-        ),
-        // Ordem dos campos
-        React.createElement(IGField, { semanas: igSemanas, dias: igDias, setSemanas: setIGSemanas, setDias: setIGDias }),
         React.createElement(IdadeAtualField, { anos: idadeAnos, meses: idadeMeses, dias: idadeDias, setAnos: setIdadeAnos, setMeses: setIdadeMeses, setDias: setIdadeDias }),
-        idadeDiasTotal <= 7 ?
+        idadeDiasTotal > 0 && idadeDiasTotal < 8 ? 
           React.createElement(InputField, {
             label: "Peso ao Nascer (g)",
             type: "number",
@@ -909,7 +1040,8 @@ function App() {
             onChange: e => setPesoNascimento(e.target.value.slice(0,5)),
             tooltip: "Peso ao nascer em gramas. (SBP 2021, p. 59)",
             refUrl: "https://www.sbp.com.br/fileadmin/user_upload/Manual_de_atualidades_em_Nutrologia_2021_-_SBP_SITE.pdf#page=59"
-          }) :
+          })
+        : 
           React.createElement(InputField, {
             label: "Peso Atual (g)",
             type: "number",
@@ -919,30 +1051,29 @@ function App() {
             tooltip: "Peso atual em gramas. (SBP 2021, p. 59)",
             refUrl: "https://www.sbp.com.br/fileadmin/user_upload/Manual_de_atualidades_em_Nutrologia_2021_-_SBP_SITE.pdf#page=59"
           }),
-          React.createElement(Comorbidades, { values: comorbidades, onChange: setComorbidades }),
-          React.createElement(LeiteDropdown, {
-            value: tipoLeite,
-            onChange: setTipoLeite,
-            kcal: kcalPersonalizado,
-            prot: protPersonalizado,
-            onKcalChange: setKcalPersonalizado,
-            onProtChange: setProtPersonalizado
+        React.createElement(LeiteDropdown, {
+          value: tipoLeite,
+          onChange: setTipoLeite,
+          kcal: kcalPersonalizado,
+          prot: protPersonalizado,
+          onKcalChange: setKcalPersonalizado,
+          onProtChange: setProtPersonalizado
         }),
-          React.createElement(InputField, {
-            label: "Número de mamadas/24h",
-            type: "number",
-            min: "1",
-            value: numMamadas,
-            onChange: e => setNumMamadas(e.target.value),
-            tooltip: "Número de mamadas em 24h. (SBP 2021, p. 59)",
-            refUrl: "https://www.sbp.com.br/fileadmin/user_upload/Manual_de_atualidades_em_Nutrologia_2021_-_SBP_SITE.pdf#page=59"
-          }),
+        React.createElement(InputField, {
+          label: "Número de mamadas/24h",
+          type: "number",
+          min: "1",
+          value: numMamadas,
+          onChange: e => setNumMamadas(e.target.value),
+          tooltip: "Número de mamadas em 24h. (SBP 2021, p. 59)",
+          refUrl: "https://www.sbp.com.br/fileadmin/user_upload/Manual_de_atualidades_em_Nutrologia_2021_-_SBP_SITE.pdf#page=59"
+        }),
         React.createElement(InputFieldWithDisable, {
           label: "Volume ingerido em cada Alimentação (mL)",
-            type: "number",
-            min: "0",
-            value: volumePorMamada,
-            onChange: e => setVolumePorMamada(e.target.value),
+          type: "number",
+          min: "0",
+          value: volumePorMamada,
+          onChange: e => setVolumePorMamada(e.target.value),
           tooltip: "Volume de cada alimentação em mL. (SBP 2021, p. 59)",
           refUrl: "https://www.sbp.com.br/fileadmin/user_upload/Manual_de_atualidades_em_Nutrologia_2021_-_SBP_SITE.pdf#page=59",
           disabled: !!cotaCaloricaDesejada,
@@ -951,8 +1082,8 @@ function App() {
         }),
         React.createElement(InputFieldWithDisable, {
           label: "Cota calórica desejada (kcal/kg/dia)",
-            type: "number",
-            min: "0",
+          type: "number",
+          min: "0",
           value: cotaCaloricaDesejada,
           onChange: e => setCotaCaloricaDesejada(e.target.value),
           tooltip: "Informe a cota calórica desejada para cálculo reverso. (SBP 2021, p. 59)",
@@ -983,28 +1114,9 @@ function App() {
             React.createElement("span", { className: "text-blue-200 text-xs ml-1" }, `[${getFaixaProteica(comorbidades).min}–${getFaixaProteica(comorbidades).max}]`),
             React.createElement(DiferencaFaixa, { valor: protKgDiaFinal, faixa: getFaixaProteica(comorbidades), unidade: "g/kg/dia" })
           ),
-          React.createElement(AlertaComorbidades, { comorbidades: comorbidades }),
           React.createElement(AlertaSBP, { tipo: "hidrica", valor: cotaHidricaFinal, comorbidades: comorbidades }),
           React.createElement(AlertaSBP, { tipo: "calorica", valor: cotaCaloricaFinal, comorbidades: comorbidades }),
           React.createElement(AlertaSBP, { tipo: "proteica", valor: protKgDiaFinal, comorbidades: comorbidades }),
-          React.createElement(GraficoComparativo, {
-            titulo: "Cota hídrica",
-            faixa: FAIXAS.hidrica,
-            valor: cotaHidricaFinal,
-            unidade: "mL/kg/dia"
-          }),
-          React.createElement(GraficoComparativo, {
-            titulo: "Cota calórica",
-            faixa: getFaixaCalorica(comorbidades),
-            valor: cotaCaloricaFinal,
-            unidade: "kcal/kg/dia"
-          }),
-          React.createElement(GraficoComparativo, {
-            titulo: "Cota proteica",
-            faixa: getFaixaProteica(comorbidades),
-            valor: protKgDiaFinal,
-            unidade: "g/kg/dia"
-          }),
         ),
         React.createElement("div", { className: "flex flex-wrap justify-center items-center gap-2 w-full mt-4" },
           React.createElement(ExportarPDF, null),
@@ -1013,12 +1125,12 @@ function App() {
         ),
         React.createElement(SugestoesForm, { className: "no-print" }),
         React.createElement("div", { className: "text-xs bg-gray-700 text-gray-200 mt-4 p-2 rounded" },
-          "Criado em Recife com ", React.createElement("span", { className: "text-red-500" }, "❤️"), " por P. Martins.",
+          "Criado em Recife com ", React.createElement("span", { className: "text-red-500" }, "❤️"), " por Pedromartinsfn ☄️.",
           React.createElement("br", null),
           React.createElement("span", { className: "font-bold text-red-700" }, 
             "A SBP ou qualquer instituição NÃO está ligada ao desenvolvimento desta calculadora.",
             React.createElement("br", null),
-            "Use com cuidado. Em caso de dúvida ou estranheza, consulte o manual da SBP e entre em contato com o desenvolvedor."
+            "Use com cuidado. Em caso de dúvida ou estranheza, consulte o manual da ASPEN e SBP e entre em contato com o desenvolvedor."
           ),
           React.createElement("br", null)
         )
